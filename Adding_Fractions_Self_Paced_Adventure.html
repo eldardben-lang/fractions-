@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Adding Fractions — Your Own Fraction Adventure!</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;600;700;800&family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --purple:#6C5CE7; --purple-deep:#3E3480; --purple-soft:#8577EF;
+    --teal:#0EA893; --orange:#FF9F45; --gold:#FFD166; --pink:#FF6B9D;
+    --white:#FFFFFF; --off:#F7F7FD; --dark:#231F3E; --muted:#6E6E8C;
+    --green:#2C9D48; --red:#E8574A;
+  }
+  *{box-sizing:border-box;}
+  html,body{
+    margin:0; padding:0; height:100%; font-family:'Inter',system-ui,sans-serif;
+    background:var(--purple-deep); color:var(--dark); overflow:hidden;
+    overscroll-behavior:none; -webkit-text-size-adjust:100%;
+  }
+  h1,h2,h3,.display{ font-family:'Baloo 2', system-ui, sans-serif; }
+
+  #app{ position:relative; width:100vw; height:100vh; }
+  #progress{ position:fixed; top:0; left:0; height:5px; background:var(--orange); z-index:50; transition:width .35s ease; }
+  .deck{ width:100%; height:100%; position:relative; }
+  .slide{
+    position:absolute; inset:0; display:none; flex-direction:column;
+    padding:52px 76px 96px; opacity:0; transform:translateY(14px);
+    transition:opacity .35s ease, transform .35s ease;
+    overflow-y:auto; -webkit-overflow-scrolling:touch;
+  }
+  .slide.active{ display:flex; opacity:1; transform:translateY(0); }
+  .slide.active .content{ min-height:min-content; }
+  .slide.bg-white{ background:var(--white); color:var(--dark); }
+  .slide.bg-purple{ background:var(--purple); color:var(--white); }
+  .slide.bg-gold{ background:var(--gold); color:var(--purple-deep); }
+  .slide.bg-teal{ background:#E7FBF8; color:var(--dark); }
+
+  .eyebrow{
+    display:inline-flex; align-items:center; gap:8px; align-self:flex-start;
+    background:var(--orange); color:var(--white); font-weight:700; font-size:12.5px;
+    letter-spacing:1px; padding:8px 18px; border-radius:20px; margin-bottom:14px;
+  }
+  .eyebrow.purple{ background:var(--purple); }
+  .eyebrow.gold{ background:var(--gold); color:var(--purple-deep); }
+  .eyebrow.teal{ background:var(--teal); }
+  .eyebrow.pink{ background:var(--pink); }
+
+  .title{ font-size:30px; font-weight:700; color:var(--purple-deep); margin:0 0 5px; line-height:1.15; }
+  .bg-purple .title{ color:var(--white); }
+  .subtitle{ font-size:14px; color:var(--muted); margin:0 0 16px; font-weight:500; }
+
+  .content{ flex:1; display:flex; flex-direction:column; min-height:0; }
+  .row-flex{ flex-direction:row; }
+
+  .grid-3{ display:grid; grid-template-columns:repeat(3,1fr); gap:14px; margin-top:6px; }
+  .grid-2{ display:grid; grid-template-columns:1fr 1fr; gap:18px; margin-top:6px; }
+  .card{ background:var(--off); border-radius:16px; padding:16px 15px; display:flex; flex-direction:column; align-items:center; text-align:center; gap:6px; }
+  .card .ic{ width:46px; height:46px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:20px; color:var(--white); }
+  .card h3{ margin:2px 0 0; font-size:14.5px; color:var(--purple-deep); }
+  .card p{ margin:0; font-size:11.5px; color:var(--muted); line-height:1.4; }
+
+  .row-item{ display:flex; align-items:flex-start; gap:12px; margin-bottom:10px; }
+  .num-badge{ flex:none; width:32px; height:32px; border-radius:50%; color:var(--white); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:13px; margin-top:1px; }
+  .row-item p{ margin:0; font-size:12.5px; line-height:1.4; }
+
+  .checkgrid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .checkitem{ display:flex; align-items:center; gap:10px; background:var(--off); border-radius:10px; padding:11px 14px; }
+  .checkitem .tick{ flex:none; width:26px; height:26px; border-radius:50%; background:var(--teal); color:var(--white); display:flex; align-items:center; justify-content:center; font-weight:700; font-size:12px; }
+  .checkitem span{ font-size:11.5px; }
+
+  .btn{ background:var(--orange); color:var(--white); border:none; border-radius:10px; padding:10px 20px; font-weight:700; font-size:13px; cursor:pointer; font-family:'Inter',sans-serif; transition:transform .12s ease, opacity .12s ease; }
+  .btn:hover{ transform:translateY(-1px); opacity:.92; }
+  .btn.secondary{ background:rgba(255,255,255,.16); }
+  .btn.small{ padding:7px 15px; font-size:12px; }
+  .btn.teal{ background:var(--teal); }
+  .btn:disabled{ background:#C9C9DD; cursor:default; transform:none; }
+
+  .fraction{ display:inline-flex; flex-direction:column; align-items:center; font-family:'Baloo 2',sans-serif; font-weight:700; line-height:1; vertical-align:middle; }
+  .fraction .num{ border-bottom:2.5px solid currentColor; padding:0 4px 2px; }
+  .fraction .den{ padding:2px 4px 0; }
+
+  .time-chip{
+    align-self:flex-end; background:rgba(0,0,0,.06); color:var(--muted); font-size:10.5px; font-weight:700;
+    padding:4px 10px; border-radius:10px; margin-top:-34px; margin-bottom:18px;
+  }
+  .bg-purple .time-chip{ background:rgba(255,255,255,.18); color:var(--white); }
+
+  .owltip{
+    display:flex; gap:12px; align-items:flex-start; background:#FFF7E8; border-left:5px solid var(--gold);
+    border-radius:10px; padding:12px 16px; margin-top:14px; font-size:12.5px; color:var(--dark);
+  }
+  .owltip .owl{ font-size:22px; flex:none; }
+
+  .nextcta{
+    text-align:center; font-size:12px; color:var(--muted); font-style:italic; margin-top:16px;
+  }
+
+  .quiz-row{ display:flex; align-items:center; justify-content:space-between; gap:14px; background:var(--off); border-radius:12px; padding:12px 18px; margin-bottom:8px; }
+  .quiz-row p{ margin:0; font-size:12.5px; flex:1; }
+  .quiz-btns{ display:flex; align-items:center; gap:7px; flex:none; flex-wrap:wrap; justify-content:flex-end; }
+  .mc-pill{ padding:7px 13px; border-radius:8px; font-weight:700; font-size:11.5px; color:var(--white); cursor:pointer; border:2px solid transparent; background:var(--purple); }
+  .mc-pill.correct{ box-shadow:0 0 0 3px var(--green) inset; }
+  .mc-pill.wrong{ box-shadow:0 0 0 3px var(--red) inset; }
+  .quiz-feedback{ font-size:11px; font-weight:700; margin-left:4px; min-width:56px; }
+  .score-banner{
+    display:flex; align-items:center; justify-content:space-between; background:var(--purple); color:var(--white);
+    border-radius:12px; padding:13px 20px; margin-bottom:14px; font-weight:700; font-size:13px;
+  }
+  #quizScore{ font-family:'Baloo 2',sans-serif; font-size:19px; color:var(--gold); }
+  #quizComplete{ display:none; background:var(--gold); color:var(--purple-deep); border-radius:12px; padding:13px 18px; font-weight:700; font-size:12.5px; margin-top:6px; text-align:center; }
+
+  footer.slide-footer{ position:absolute; bottom:18px; left:76px; right:76px; display:flex; justify-content:space-between; font-size:10.5px; color:var(--muted); }
+  .bg-purple footer.slide-footer{ color:rgba(255,255,255,.65); }
+  .bg-gold footer.slide-footer{ color:var(--purple-deep); opacity:.65; }
+
+  .barwrap{ margin-bottom:16px; }
+  .barlabel{ font-size:12.5px; font-weight:700; color:var(--purple-deep); margin-bottom:5px; }
+  .fracbar{ display:flex; width:100%; max-width:480px; height:44px; border-radius:8px; overflow:hidden; border:2px solid var(--purple-deep); }
+  .fracbar .seg{ flex:1; border-right:1.5px solid var(--purple-deep); }
+  .fracbar .seg:last-child{ border-right:none; }
+  .fracbar .seg.shaded{ background:var(--orange); }
+  .fracbar .seg.shaded2{ background:var(--teal); }
+
+  .match-grid{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; }
+  .match-card{
+    background:var(--white); border:3px solid var(--purple-soft); border-radius:12px;
+    display:flex; align-items:center; justify-content:center; padding:14px 6px; cursor:pointer;
+    font-family:'Baloo 2',sans-serif; font-weight:700; font-size:16px; color:var(--purple-deep);
+    transition:all .15s ease; min-height:64px;
+  }
+  .match-card:hover{ border-color:var(--orange); }
+  .match-card.selected{ background:var(--gold); border-color:var(--orange); }
+  .match-card.matched{ background:#EAF7EE; border-color:var(--green); color:var(--green); cursor:default; }
+  .match-card.wrong-flash{ background:#FDEAEA; border-color:var(--red); }
+  #matchStatus{ margin-top:14px; font-weight:700; font-size:13px; color:var(--purple-deep); }
+
+  .race-timerbar{ width:100%; height:10px; background:#E4E4F2; border-radius:6px; overflow:hidden; margin-bottom:16px; }
+  .race-timerfill{ height:100%; background:var(--orange); width:100%; transition:width 1s linear; }
+  .race-qcard{ background:var(--off); border-radius:16px; padding:22px 24px; text-align:center; }
+  .race-qcard .rq{ font-family:'Baloo 2',sans-serif; font-size:19px; font-weight:700; color:var(--purple-deep); margin-bottom:16px; }
+  .race-opts{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .race-opt{
+    background:var(--white); border:2.5px solid var(--purple-soft); border-radius:10px; padding:12px; cursor:pointer;
+    font-weight:700; font-size:14px; color:var(--purple-deep); transition:all .12s ease;
+  }
+  .race-opt:hover{ border-color:var(--orange); }
+  .race-opt.correct{ background:#EAF7EE; border-color:var(--green); color:var(--green); }
+  .race-opt.wrong{ background:#FDEAEA; border-color:var(--red); color:var(--red); }
+  #raceScoreDisplay{ font-family:'Baloo 2',sans-serif; font-size:16px; font-weight:700; color:var(--purple-deep); }
+
+  .practice-card{ background:var(--off); border-radius:14px; padding:16px 20px; margin-bottom:12px; }
+  .practice-card .pq{ font-weight:700; font-size:13.5px; color:var(--purple-deep); margin-bottom:8px; }
+  .practice-card input{ border:none; border-bottom:1.5px dashed #B9B9D9; background:transparent; font-size:12.5px; padding:2px 4px; width:220px; outline:none; margin-bottom:8px; }
+  .reveal-box{ display:none; background:var(--white); border-radius:10px; padding:10px 14px; margin-top:8px; font-size:12px; color:var(--dark); border-left:4px solid var(--teal); }
+  .reveal-box.show{ display:block; }
+
+  .stepwalk{ display:flex; flex-direction:column; gap:10px; }
+  .stepbtn-row{ display:flex; gap:10px; flex-wrap:wrap; margin-top:6px; }
+  .step-reveal{ display:none; background:var(--white); border-radius:10px; padding:10px 14px; border-left:4px solid var(--orange); font-size:13px; }
+  .step-reveal.show{ display:block; }
+
+  #navbar{
+    position:fixed; bottom:0; left:0; right:0; height:64px; z-index:60;
+    background:rgba(62,52,128,.94); backdrop-filter:blur(6px);
+    display:flex; align-items:center; justify-content:center; gap:18px; color:var(--white); font-size:13px;
+    padding-bottom:env(safe-area-inset-bottom, 0);
+  }
+  #navbar button.navctrl{ background:var(--orange); border:none; color:var(--white); width:42px; height:42px; border-radius:50%; font-size:17px; cursor:pointer; display:flex; align-items:center; justify-content:center; flex:none; -webkit-tap-highlight-color:transparent; }
+  #navbar button.navctrl:disabled{ opacity:.3; cursor:default; }
+  #navbar .counter{ font-weight:700; min-width:56px; text-align:center; }
+  #swipehint{
+    position:fixed; top:16px; left:50%; transform:translateX(-50%); z-index:60;
+    background:rgba(62,52,128,.9); color:var(--white); font-size:12px; font-weight:600; padding:8px 16px;
+    border-radius:20px; display:none; pointer-events:none; opacity:0; transition:opacity .4s ease;
+  }
+
+  .cert-name-input{
+    font-family:'Baloo 2',sans-serif; font-size:22px; font-weight:700; text-align:center;
+    border:none; border-bottom:3px dashed var(--gold); background:transparent; color:var(--white);
+    padding:6px 10px; outline:none; width:280px; max-width:80vw;
+  }
+  .cert-name-input::placeholder{ color:rgba(255,255,255,.5); }
+
+  @media (max-width: 900px){
+    .slide{ padding:28px 24px 84px; }
+    .title{ font-size:22px; }
+    .grid-3{ grid-template-columns:1fr; }
+    .grid-2{ grid-template-columns:1fr; gap:12px; }
+    .checkgrid{ grid-template-columns:1fr; }
+    .row-flex{ flex-direction:column; }
+    .match-grid{ grid-template-columns:repeat(3,1fr); }
+    .race-opts{ grid-template-columns:1fr; }
+    .time-chip{ margin-top:0; margin-bottom:14px; align-self:flex-start; }
+  }
+  @media (max-width: 560px){
+    #progress{ height:4px; }
+    .slide{ padding:18px 15px 80px; }
+    .eyebrow{ font-size:10px; padding:6px 12px; margin-bottom:10px; }
+    .title{ font-size:19px; margin-bottom:4px; }
+    .subtitle{ font-size:12px; margin-bottom:10px; }
+    h1.display{ font-size:22px !important; }
+    .row-item p{ font-size:12px; }
+    .checkitem{ padding:9px 11px; }
+    .quiz-row{ flex-direction:column; align-items:flex-start; gap:7px; padding:10px 12px; }
+    .quiz-btns{ width:100%; }
+    footer.slide-footer{ left:15px; right:15px; bottom:12px; font-size:9px; }
+    #navbar{ height:58px; gap:10px; }
+    #navbar button.navctrl{ width:44px; height:44px; font-size:18px; }
+    .match-grid{ grid-template-columns:repeat(2,1fr); }
+    .fracbar{ height:36px; }
+    .cert-name-input{ font-size:18px; width:220px; }
+  }
+</style>
+</head>
+<body>
+
+<div id="progress"></div>
+<div id="swipehint">Swipe left / right to move on</div>
+<div id="app">
+  <div class="deck" id="deck">
+
+    <!-- SLIDE 1: WELCOME + HOW THIS WORKS -->
+    <section class="slide bg-purple active">
+      <div class="content" style="align-items:center; justify-content:center; text-align:center; gap:14px;">
+        <div style="font-size:56px;">🦉🍕</div>
+        <div style="font-weight:700; letter-spacing:2px; color:var(--gold); font-size:12.5px;">A FRACTION ADVENTURE JUST FOR YOU</div>
+        <h1 class="display" style="font-size:38px; margin:4px 0; color:var(--white); line-height:1.1;">Welcome, Fraction Explorer!</h1>
+        <p style="color:#E4E1FA; font-size:15px; margin:0; max-width:520px;">Today you're going to learn how to <strong>add fractions</strong> — even tricky ones with different bottom numbers. There are games, challenges, and a certificate waiting for you at the end!</p>
+        <div style="background:rgba(255,255,255,.14); border-radius:14px; padding:16px 22px; max-width:520px; margin-top:8px;">
+          <p style="margin:0 0 8px; font-weight:700; color:var(--gold); font-size:13px;">🕹️ How to use this lesson:</p>
+          <p style="margin:0 0 6px; font-size:12.5px;">➡️ Tap the arrow at the bottom-right (or swipe) to go to the next page.</p>
+          <p style="margin:0 0 6px; font-size:12.5px;">⬅️ Tap the left arrow to go back and look again.</p>
+          <p style="margin:0; font-size:12.5px;">🖱️ Some pages have buttons and games — click around and have fun!</p>
+        </div>
+        <p style="font-size:12.5px; color:var(--gold); font-weight:700; margin-top:6px;">Take your time. There's no rush — go at YOUR speed. 🌟</p>
+      </div>
+    </section>
+
+    <!-- SLIDE 2: GOAL -->
+    <section class="slide bg-white">
+      <span class="eyebrow">Your Mission</span>
+      <h1 class="title">What You'll Learn Today</h1>
+      <div class="time-chip">⏱ about 60 minutes total</div>
+      <div class="content row-flex" style="gap:22px; align-items:center;">
+        <div style="flex:1.3; background:var(--off); border-radius:16px; padding:18px 22px;">
+          <p style="margin:0 0 7px; font-weight:700; color:var(--purple-deep); font-size:12.5px;">By the end of today, you will be able to:</p>
+          <div class="checkgrid">
+            <div class="checkitem"><div class="tick">✓</div><span>Find a common denominator</span></div>
+            <div class="checkitem"><div class="tick">✓</div><span>Add fractions with different denominators</span></div>
+            <div class="checkitem"><div class="tick">✓</div><span>Simplify your answers</span></div>
+            <div class="checkitem"><div class="tick">✓</div><span>Even add mixed numbers (bonus!)</span></div>
+          </div>
+        </div>
+        <div style="flex:1; display:flex; justify-content:center;">
+          <div style="font-size:64px;">🎯</div>
+        </div>
+      </div>
+      <div class="nextcta">When you're ready, tap the arrow below to start! →</div>
+      <footer class="slide-footer"><span>Adding Fractions</span><span>2 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 3: FRACTION REFRESHER -->
+    <section class="slide bg-white">
+      <span class="eyebrow purple">Quick Refresher</span>
+      <h1 class="title">Remember These Two Words?</h1>
+      <div class="time-chip">⏱ ~3 min</div>
+      <div class="content" style="justify-content:center; gap:16px;">
+        <div class="grid-2">
+          <div class="card"><div class="ic" style="background:var(--orange);">🔝</div><h3>Numerator</h3><p>The TOP number — how many parts we HAVE</p></div>
+          <div class="card"><div class="ic" style="background:var(--teal);">🔻</div><h3>Denominator</h3><p>The BOTTOM number — how many equal parts make the WHOLE</p></div>
+        </div>
+        <div class="barwrap">
+          <div class="barlabel">Example: <span class="fraction"><span class="num">3</span><span class="den">5</span></span> means 3 out of 5 equal parts</div>
+          <div class="fracbar" id="refresherBar"></div>
+        </div>
+        <div class="owltip"><span class="owl">🦉</span><span>If you already knew this — awesome! If not, no worries, that's exactly why we're reviewing it.</span></div>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions</span><span>3 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 4: SAME DENOMINATOR REVIEW -->
+    <section class="slide bg-white">
+      <span class="eyebrow purple">Quick Review</span>
+      <h1 class="title">Easy Mode: Same Denominators</h1>
+      <div class="time-chip">⏱ ~3 min</div>
+      <div class="content" style="justify-content:center; gap:16px;">
+        <p style="font-size:13px; color:var(--muted); margin:0;">When two fractions already have the SAME bottom number, adding is simple — just add the top numbers!</p>
+        <div style="background:var(--off); border-radius:14px; padding:18px 22px; text-align:center;">
+          <span class="fraction" style="font-size:24px; color:var(--purple-deep);"><span class="num">2</span><span class="den">7</span></span>
+          <span style="font-size:20px; margin:0 12px; color:var(--muted);">+</span>
+          <span class="fraction" style="font-size:24px; color:var(--purple-deep);"><span class="num">3</span><span class="den">7</span></span>
+          <span style="font-size:20px; margin:0 12px; color:var(--muted);">=</span>
+          <span class="fraction" style="font-size:24px; color:var(--teal);"><span class="num">5</span><span class="den">7</span></span>
+        </div>
+        <p style="font-size:12.5px; color:var(--muted); text-align:center; margin:0;">The denominator stays the same — you only add the numerators.</p>
+        <div class="owltip"><span class="owl">🦉</span><span>But what happens when the bottom numbers are DIFFERENT? That's the tricky part we're about to solve!</span></div>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions</span><span>4 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 5: THE BIG PROBLEM -->
+    <section class="slide bg-white">
+      <span class="eyebrow purple">The Big Idea</span>
+      <h1 class="title">Wait... Why Can't We Just Add?</h1>
+      <div class="time-chip">⏱ ~4 min</div>
+      <div class="content" style="justify-content:center; gap:14px;">
+        <div style="background:var(--purple); color:var(--white); border-radius:14px; padding:16px 22px; font-weight:700; font-size:13.5px;">
+          It's like adding 1 apple + 1 orange and calling it "2 apples" — the pieces have to be the SAME SIZE before we can combine them!
+        </div>
+        <div class="barwrap">
+          <div class="barlabel"><span class="fraction"><span class="num">1</span><span class="den">2</span></span> (halves — big pieces)</div>
+          <div class="fracbar" id="probBarA"></div>
+        </div>
+        <div class="barwrap">
+          <div class="barlabel"><span class="fraction"><span class="num">1</span><span class="den">3</span></span> (thirds — smaller pieces)</div>
+          <div class="fracbar" id="probBarB"></div>
+        </div>
+        <p style="font-size:12px; color:var(--muted); margin:0;">See how the pieces are different sizes? We need to make them match first — let's learn how!</p>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions</span><span>5 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 6: FINDING LCD -->
+    <section class="slide bg-white">
+      <span class="eyebrow purple">Let's Learn</span>
+      <h1 class="title">Finding a Common Denominator</h1>
+      <div class="time-chip">⏱ ~4 min</div>
+      <div class="content" style="justify-content:center; gap:14px;">
+        <p style="font-size:13px; color:var(--muted); margin:0;">List the multiples of each denominator until you find one they SHARE — that's your <strong>Least Common Denominator (LCD)</strong>.</p>
+        <div class="grid-2">
+          <div class="card" style="align-items:flex-start; text-align:left;"><h3>Multiples of 4</h3><p style="font-size:13px; color:var(--dark);">4, 8, <strong style="color:var(--orange);">12</strong>, 16, 20...</p></div>
+          <div class="card" style="align-items:flex-start; text-align:left;"><h3>Multiples of 6</h3><p style="font-size:13px; color:var(--dark);">6, <strong style="color:var(--orange);">12</strong>, 18, 24...</p></div>
+        </div>
+        <div style="background:var(--gold); color:var(--purple-deep); border-radius:12px; padding:12px 18px; font-weight:700; font-size:13px; text-align:center;">
+          The smallest shared multiple is 12 — so the LCD of 4 and 6 is 12!
+        </div>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions</span><span>6 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 7: WORKED EXAMPLE -->
+    <section class="slide bg-white">
+      <span class="eyebrow purple">Watch This Example</span>
+      <h1 class="title">Adding: Step by Step</h1>
+      <div class="time-chip">⏱ ~5 min</div>
+      <div class="content" style="justify-content:center;">
+        <div class="row-item"><div class="num-badge" style="background:var(--orange);">1</div><p>Find the LCD of the denominators: LCD of 4 and 6 is <strong>12</strong></p></div>
+        <div class="row-item"><div class="num-badge" style="background:var(--teal);">2</div><p>Convert each fraction to an equivalent fraction with denominator 12: <span class="fraction" style="font-size:13px;"><span class="num">1</span><span class="den">4</span></span> = <span class="fraction" style="font-size:13px;"><span class="num">3</span><span class="den">12</span></span> &nbsp; and &nbsp; <span class="fraction" style="font-size:13px;"><span class="num">1</span><span class="den">6</span></span> = <span class="fraction" style="font-size:13px;"><span class="num">2</span><span class="den">12</span></span></p></div>
+        <div class="row-item"><div class="num-badge" style="background:var(--orange);">3</div><p>Add the numerators, keep the denominator: 3 + 2 = <strong>5</strong>, so the answer is <span class="fraction" style="font-size:13px;"><span class="num">5</span><span class="den">12</span></span></p></div>
+        <div class="row-item"><div class="num-badge" style="background:var(--teal);">4</div><p>Check if you can simplify — <span class="fraction" style="font-size:13px;"><span class="num">5</span><span class="den">12</span></span> is already in lowest terms!</p></div>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions</span><span>7 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 8: TRY ONE YOURSELF (step reveal) -->
+    <section class="slide bg-white">
+      <span class="eyebrow purple">Your Turn</span>
+      <h1 class="title">Try One Yourself!</h1>
+      <div class="time-chip">⏱ ~5 min</div>
+      <p class="subtitle">Solve <span class="fraction" style="font-size:16px; color:var(--purple-deep);"><span class="num">2</span><span class="den">5</span></span> + <span class="fraction" style="font-size:16px; color:var(--purple-deep);"><span class="num">1</span><span class="den">4</span></span> on paper first. Then click each button below to check your work, one step at a time.</p>
+      <div class="content stepwalk">
+        <div class="stepbtn-row">
+          <button class="btn small" onclick="toggleStep('sw1')">Step 1: What's the LCD?</button>
+          <button class="btn small" onclick="toggleStep('sw2')">Step 2: Convert the fractions</button>
+          <button class="btn small" onclick="toggleStep('sw3')">Step 3: Add them</button>
+          <button class="btn small teal" onclick="toggleStep('sw4')">Step 4: Simplify?</button>
+        </div>
+        <div class="step-reveal" id="sw1">The LCD of 5 and 4 is <strong>20</strong> (5, 10, 15, 20... and 4, 8, 12, 16, 20 — they share 20!).</div>
+        <div class="step-reveal" id="sw2">2/5 = 8/20 &nbsp;&nbsp; and &nbsp;&nbsp; 1/4 = 5/20</div>
+        <div class="step-reveal" id="sw3">8/20 + 5/20 = <strong>13/20</strong></div>
+        <div class="step-reveal" id="sw4">13 and 20 don't share any common factors besides 1, so 13/20 is already fully simplified. Great work!</div>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions</span><span>8 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 9: SIMPLIFY -->
+    <section class="slide bg-white">
+      <span class="eyebrow purple">Let's Learn</span>
+      <h1 class="title">Don't Forget to Simplify!</h1>
+      <div class="time-chip">⏱ ~3 min</div>
+      <div class="content" style="justify-content:center; gap:16px;">
+        <p style="font-size:13px; color:var(--muted); margin:0;">Always check if your answer can be reduced to lowest terms — divide the top AND bottom by the same number.</p>
+        <div style="background:var(--off); border-radius:14px; padding:18px 22px; text-align:center;">
+          <span class="fraction" style="font-size:26px; color:var(--purple-deep);"><span class="num">6</span><span class="den">8</span></span>
+          <span style="font-size:20px; margin:0 14px; color:var(--muted);">÷ 2 ÷ 2 =</span>
+          <span class="fraction" style="font-size:26px; color:var(--teal);"><span class="num">3</span><span class="den">4</span></span>
+        </div>
+        <p style="font-size:12px; color:var(--muted); text-align:center; margin:0;">Both 6 and 8 can be divided by 2 — so <span class="fraction" style="font-size:12px;"><span class="num">6</span><span class="den">8</span></span> simplifies to <span class="fraction" style="font-size:12px;"><span class="num">3</span><span class="den">4</span></span></p>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions</span><span>9 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 10: GAME 1 - FRACTION BAR BUILDER -->
+    <section class="slide bg-teal">
+      <span class="eyebrow pink">Game 1: Build It!</span>
+      <h1 class="title">Fraction Bar Builder</h1>
+      <div class="time-chip">⏱ ~6 min</div>
+      <p class="subtitle">Click the buttons below in order and watch what happens when we turn thirds and fourths into the SAME size pieces!</p>
+      <div class="content">
+        <div class="barwrap">
+          <div class="barlabel" id="builderLabelA"><span class="fraction"><span class="num">1</span><span class="den">3</span></span></div>
+          <div class="fracbar" id="builderBarA"></div>
+        </div>
+        <div class="barwrap">
+          <div class="barlabel" id="builderLabelB"><span class="fraction"><span class="num">1</span><span class="den">4</span></span></div>
+          <div class="fracbar" id="builderBarB"></div>
+        </div>
+        <div class="barwrap" id="builderSumWrap" style="display:none;">
+          <div class="barlabel" id="builderLabelSum">Sum</div>
+          <div class="fracbar" id="builderBarSum"></div>
+        </div>
+        <p id="builderNote" style="font-size:12.5px; color:var(--purple-deep); font-weight:700; min-height:18px;"></p>
+        <div style="display:flex; gap:10px; flex-wrap:wrap;">
+          <button class="btn" id="builderStep1Btn" onclick="builderStep1()">Step 1: Convert to a Common Denominator</button>
+          <button class="btn teal" id="builderStep2Btn" onclick="builderStep2()" disabled>Step 2: Add Them Together!</button>
+          <button class="btn secondary" onclick="builderReset()">Reset</button>
+        </div>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions — Game</span><span>10 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 11: GAME 2 - MATCH UP -->
+    <section class="slide bg-gold">
+      <span class="eyebrow purple">Game 2: Match-Up</span>
+      <h1 class="title" style="color:var(--purple-deep);">Common Denominator Match-Up</h1>
+      <div class="time-chip">⏱ ~6 min</div>
+      <p class="subtitle" style="color:var(--purple-deep);">Click two cards that show EQUIVALENT fractions (the same value, written differently)!</p>
+      <div class="content">
+        <div class="match-grid" id="matchGrid"></div>
+        <div id="matchStatus">Matches found: 0 / 6</div>
+      </div>
+      <footer class="slide-footer" style="color:var(--purple-deep); opacity:.7;"><span>Adding Fractions — Game</span><span>11 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 12: BONUS - MIXED NUMBERS -->
+    <section class="slide bg-white">
+      <span class="eyebrow pink">Bonus Challenge</span>
+      <h1 class="title">Adding Mixed Numbers</h1>
+      <div class="time-chip">⏱ ~5 min</div>
+      <p class="subtitle">A mixed number has a whole number AND a fraction, like 1 ¼. Here's how to add two of them:</p>
+      <div class="content" style="justify-content:center;">
+        <div class="row-item"><div class="num-badge" style="background:var(--orange);">1</div><p>Add the whole numbers first: 1 + 2 = <strong>3</strong></p></div>
+        <div class="row-item"><div class="num-badge" style="background:var(--teal);">2</div><p>Find the LCD of the fraction parts (4 and 3): LCD = <strong>12</strong></p></div>
+        <div class="row-item"><div class="num-badge" style="background:var(--orange);">3</div><p>Convert and add the fractions: 1/4 = 3/12, 1/3 = 4/12 &nbsp;→&nbsp; 3/12 + 4/12 = <strong>7/12</strong></p></div>
+        <div class="row-item"><div class="num-badge" style="background:var(--teal);">4</div><p>Combine: 3 + 7/12 = <strong>3 7/12</strong></p></div>
+        <div class="owltip"><span class="owl">🦉</span><span>Tricky bit: if the fractions add up to MORE than a whole (like 6/4), turn that into a mixed number and add the extra whole to your total!</span></div>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions — Bonus</span><span>12 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 13: GAME 3 - FRACTION RACE -->
+    <section class="slide bg-purple">
+      <span class="eyebrow gold" style="color:var(--purple-deep);">Game 3: Speed Round</span>
+      <h1 class="title" style="color:var(--white);">Fraction Race!</h1>
+      <div class="time-chip">⏱ ~6 min</div>
+      <p class="subtitle" style="color:#E4E1FA;">Answer fast for bonus points — but it's OK to take your time too. Click Start when ready!</p>
+      <div class="content" style="align-items:center; gap:14px;">
+        <div id="raceScoreDisplay" style="color:var(--gold);">Race Score: 0</div>
+        <div style="width:100%; max-width:480px;">
+          <div class="race-timerbar"><div class="race-timerfill" id="raceTimerFill"></div></div>
+        </div>
+        <div id="raceArea" style="width:100%; max-width:480px;">
+          <button class="btn" id="raceStartBtn" onclick="startRace()" style="align-self:center; margin:0 auto; display:block;">🏁 Start the Race!</button>
+        </div>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions — Game</span><span>13 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 14: PRACTICE -->
+    <section class="slide bg-white">
+      <span class="eyebrow purple">Practice Zone</span>
+      <h1 class="title">Solve It Yourself!</h1>
+      <div class="time-chip">⏱ ~6 min</div>
+      <p class="subtitle">Work out each problem, then click to reveal the steps and check your answer.</p>
+      <div class="content" id="practiceContainer" style="justify-content:flex-start;"></div>
+      <footer class="slide-footer"><span>Adding Fractions — Practice</span><span>14 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 15: RECAP -->
+    <section class="slide bg-white">
+      <span class="eyebrow purple">Recap</span>
+      <h1 class="title">You Learned So Much!</h1>
+      <div class="time-chip">⏱ ~2 min</div>
+      <div class="content checkgrid" style="align-content:start;">
+        <div class="checkitem"><div class="tick">✓</div><span>I can find the LCD of two denominators</span></div>
+        <div class="checkitem"><div class="tick">✓</div><span>I can convert fractions to equivalent forms</span></div>
+        <div class="checkitem"><div class="tick">✓</div><span>I can add fractions with unlike denominators</span></div>
+        <div class="checkitem"><div class="tick">✓</div><span>I always check if I can simplify my answer</span></div>
+        <div class="checkitem"><div class="tick">✓</div><span>I can even add mixed numbers</span></div>
+        <div class="checkitem"><div class="tick">✓</div><span>I played 3 fraction games today!</span></div>
+      </div>
+      <footer class="slide-footer"><span>Adding Fractions</span><span>15 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 16: FINAL QUIZ -->
+    <section class="slide bg-white">
+      <span class="eyebrow">Final Challenge</span>
+      <h1 class="title">Show What You Know!</h1>
+      <div class="score-banner">
+        <span>Choose the best answer for each question</span>
+        <span id="quizScore">Score: 0/8</span>
+      </div>
+      <div class="content" id="quiz" style="justify-content:flex-start;"></div>
+      <div id="quizComplete"></div>
+      <footer class="slide-footer"><span>Adding Fractions — Final Quiz</span><span>16 / 17</span></footer>
+    </section>
+
+    <!-- SLIDE 17: CERTIFICATE -->
+    <section class="slide bg-purple">
+      <div class="content" style="align-items:center; justify-content:center; text-align:center; gap:12px;">
+        <div style="font-size:44px;">🏆</div>
+        <h1 class="display" style="color:var(--white); font-size:30px; margin:0;">Certificate of Fraction Mastery</h1>
+        <p style="color:#E4E1FA; font-size:13px; margin:6px 0 0;">This certifies that</p>
+        <input type="text" class="cert-name-input" id="certName" placeholder="Type your name here">
+        <p style="color:#E4E1FA; font-size:13px; margin:6px 0 0; max-width:480px;">has successfully completed the Adding Fractions with Unlike Denominators adventure, including 3 games, a bonus challenge, and a final quiz!</p>
+        <div style="background:var(--purple-soft); border-radius:12px; padding:12px 22px; margin-top:10px;">
+          <span style="color:var(--gold); font-weight:700; font-size:14px;" id="certDate"></span>
+        </div>
+        <p style="font-style:italic; color:var(--gold); font-size:13.5px; margin-top:12px;">You worked hard and did this all by yourself. Be proud! 🌟</p>
+        <button class="btn secondary small" style="margin-top:10px;" onclick="idx=0; render();">🔁 Go Back to the Start</button>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div id="navbar">
+  <button class="navctrl" id="prevBtn" onclick="go(-1)">‹</button>
+  <div class="counter"><span id="cur">1</span> / <span id="total">17</span></div>
+  <button class="navctrl" id="nextBtn" onclick="go(1)">›</button>
+</div>
+
+<script>
+  // ================= DECK ENGINE =================
+  const slides = document.querySelectorAll('.slide');
+  const total = slides.length;
+  let idx = 0;
+  document.getElementById('total').textContent = total;
+
+  function render(){
+    if(idx===12 && raceInterval){ clearInterval(raceInterval); raceInterval=null; } // leaving race slide (index 12 = slide 13)
+    slides.forEach((s,i)=> s.classList.toggle('active', i===idx));
+    document.getElementById('cur').textContent = idx+1;
+    document.getElementById('progress').style.width = ((idx+1)/total*100)+'%';
+    document.getElementById('prevBtn').disabled = idx===0;
+    document.getElementById('nextBtn').disabled = idx===total-1;
+  }
+  function go(dir){
+    const next = idx + dir;
+    if(next>=0 && next<total){
+      if(idx===12 && raceInterval){ clearInterval(raceInterval); raceInterval=null; }
+      idx = next; render();
+    }
+  }
+  document.addEventListener('keydown', (e)=>{
+    if(e.key==='ArrowRight' || e.key===' '){ go(1); }
+    if(e.key==='ArrowLeft'){ go(-1); }
+  });
+  render();
+
+  let touchStartX = 0, touchStartY = 0;
+  const appEl = document.getElementById('app');
+  appEl.addEventListener('touchstart', (e)=>{
+    touchStartX = e.changedTouches[0].screenX;
+    touchStartY = e.changedTouches[0].screenY;
+  }, {passive:true});
+  appEl.addEventListener('touchend', (e)=>{
+    const dx = e.changedTouches[0].screenX - touchStartX;
+    const dy = e.changedTouches[0].screenY - touchStartY;
+    if(Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy) * 1.5){
+      if(dx < 0) go(1); else go(-1);
+    }
+  }, {passive:true});
+  if('ontouchstart' in window || navigator.maxTouchPoints > 0){
+    const hint = document.getElementById('swipehint');
+    hint.style.display = 'block';
+    requestAnimationFrame(()=>{ hint.style.opacity = '1'; });
+    setTimeout(()=>{ hint.style.opacity = '0'; setTimeout(()=> hint.style.display='none', 500); }, 3200);
+  }
+
+  // ================= FRACTION BAR RENDERER =================
+  function renderBar(elId, numerator, denominator, shadeClass){
+    const el = document.getElementById(elId);
+    el.innerHTML = '';
+    for(let i=0;i<denominator;i++){
+      const seg = document.createElement('div');
+      seg.className = 'seg' + (i<numerator ? ' '+shadeClass : '');
+      el.appendChild(seg);
+    }
+  }
+  renderBar('refresherBar', 3, 5, 'shaded');
+  renderBar('probBarA', 1, 2, 'shaded');
+  renderBar('probBarB', 1, 3, 'shaded2');
+
+  // ================= STEP REVEAL (Try One Yourself) =================
+  function toggleStep(id){
+    document.getElementById(id).classList.toggle('show');
+  }
+
+  // ================= GAME 1: FRACTION BAR BUILDER =================
+  function builderInit(){
+    renderBar('builderBarA', 1, 3, 'shaded');
+    renderBar('builderBarB', 1, 4, 'shaded2');
+    document.getElementById('builderLabelA').innerHTML = '<span class="fraction"><span class="num">1</span><span class="den">3</span></span>';
+    document.getElementById('builderLabelB').innerHTML = '<span class="fraction"><span class="num">1</span><span class="den">4</span></span>';
+    document.getElementById('builderSumWrap').style.display = 'none';
+    document.getElementById('builderNote').textContent = '';
+    document.getElementById('builderStep1Btn').disabled = false;
+    document.getElementById('builderStep2Btn').disabled = true;
+  }
+  function builderStep1(){
+    renderBar('builderBarA', 4, 12, 'shaded');
+    renderBar('builderBarB', 3, 12, 'shaded2');
+    document.getElementById('builderLabelA').innerHTML = '<span class="fraction"><span class="num">1</span><span class="den">3</span></span> = <span class="fraction"><span class="num">4</span><span class="den">12</span></span>';
+    document.getElementById('builderLabelB').innerHTML = '<span class="fraction"><span class="num">1</span><span class="den">4</span></span> = <span class="fraction"><span class="num">3</span><span class="den">12</span></span>';
+    document.getElementById('builderNote').textContent = 'Now both bars have 12 equal pieces — we can compare and combine them!';
+    document.getElementById('builderStep1Btn').disabled = true;
+    document.getElementById('builderStep2Btn').disabled = false;
+  }
+  function builderStep2(){
+    document.getElementById('builderSumWrap').style.display = 'block';
+    renderBar('builderBarSum', 7, 12, 'shaded');
+    document.getElementById('builderLabelSum').innerHTML = '<span class="fraction"><span class="num">1</span><span class="den">3</span></span> + <span class="fraction"><span class="num">1</span><span class="den">4</span></span> = <span class="fraction"><span class="num">4</span><span class="den">12</span></span> + <span class="fraction"><span class="num">3</span><span class="den">12</span></span> = <span class="fraction"><span class="num">7</span><span class="den">12</span></span>';
+    document.getElementById('builderNote').textContent = '🎉 4 out of 12 plus 3 out of 12 makes 7 out of 12!';
+    document.getElementById('builderStep2Btn').disabled = true;
+  }
+  function builderReset(){ builderInit(); }
+  builderInit();
+
+  // ================= GAME 2: MATCH-UP =================
+  const matchPairs = [
+    { pair: 1, text: "1/2" }, { pair: 1, text: "4/8" },
+    { pair: 2, text: "1/3" }, { pair: 2, text: "2/6" },
+    { pair: 3, text: "2/3" }, { pair: 3, text: "8/12" },
+    { pair: 4, text: "1/4" }, { pair: 4, text: "3/12" },
+    { pair: 5, text: "3/4" }, { pair: 5, text: "9/12" },
+    { pair: 6, text: "1/5" }, { pair: 6, text: "2/10" },
+  ];
+  function shuffleArr(arr){
+    const a = arr.slice();
+    for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; }
+    return a;
+  }
+  const shuffledCards = shuffleArr(matchPairs);
+  const matchGrid = document.getElementById('matchGrid');
+  let matchSelected = null;
+  let matchesFound = 0;
+  let matchLock = false;
+  shuffledCards.forEach((card, i)=>{
+    const div = document.createElement('div');
+    div.className = 'match-card';
+    div.id = 'mcard-'+i;
+    const parts = card.text.split('/');
+    div.innerHTML = `<span class="fraction" style="font-size:18px;"><span class="num">${parts[0]}</span><span class="den">${parts[1]}</span></span>`;
+    div.dataset.pair = card.pair;
+    div.addEventListener('click', ()=> matchClick(i, card.pair));
+    matchGrid.appendChild(div);
+  });
+  function matchClick(i, pairId){
+    if(matchLock) return;
+    const el = document.getElementById('mcard-'+i);
+    if(el.classList.contains('matched') || el.classList.contains('selected')) return;
+
+    if(matchSelected === null){
+      el.classList.add('selected');
+      matchSelected = { i, pairId, el };
+    } else {
+      if(matchSelected.i === i) return;
+      if(matchSelected.pairId === pairId){
+        el.classList.remove('selected'); el.classList.add('matched');
+        matchSelected.el.classList.remove('selected'); matchSelected.el.classList.add('matched');
+        matchesFound++;
+        document.getElementById('matchStatus').textContent = `Matches found: ${matchesFound} / 6`;
+        if(matchesFound === 6){
+          document.getElementById('matchStatus').textContent = `🎉 All 6 matched! Amazing job!`;
+        }
+        matchSelected = null;
+      } else {
+        el.classList.add('selected');
+        matchLock = true;
+        el.classList.add('wrong-flash');
+        matchSelected.el.classList.add('wrong-flash');
+        setTimeout(()=>{
+          el.classList.remove('selected','wrong-flash');
+          matchSelected.el.classList.remove('selected','wrong-flash');
+          matchSelected = null;
+          matchLock = false;
+        }, 650);
+      }
+    }
+  }
+
+  // ================= PRACTICE: SOLVE IT =================
+  const practiceProblems = [
+    { q: "1/2 + 1/5 = ?", steps: "LCD of 2 and 5 is 10. 1/2 = 5/10, 1/5 = 2/10. 5/10 + 2/10 = 7/10 (already simplified)." },
+    { q: "1/6 + 1/3 = ?", steps: "LCD of 6 and 3 is 6. 1/6 stays 1/6, 1/3 = 2/6. 1/6 + 2/6 = 3/6, which simplifies to 1/2." },
+    { q: "2/3 + 1/4 = ?", steps: "LCD of 3 and 4 is 12. 2/3 = 8/12, 1/4 = 3/12. 8/12 + 3/12 = 11/12 (already simplified)." },
+    { q: "1 1/2 + 1/4 = ?", steps: "1/2 = 2/4. Add the fraction parts: 2/4 + 1/4 = 3/4. Combine with the whole number: 1 3/4." },
+  ];
+  const practiceContainer = document.getElementById('practiceContainer');
+  practiceProblems.forEach((p, i)=>{
+    const card = document.createElement('div');
+    card.className = 'practice-card';
+    card.innerHTML = `
+      <div class="pq">${i+1}. ${p.q}</div>
+      <div><input type="text" placeholder="Show your work here..."></div>
+      <button class="btn small teal" onclick="toggleReveal(${i})">Show Steps &amp; Answer</button>
+      <div class="reveal-box" id="reveal-${i}">${p.steps}</div>
+    `;
+    practiceContainer.appendChild(card);
+  });
+  function toggleReveal(i){
+    document.getElementById('reveal-'+i).classList.toggle('show');
+  }
+
+  // ================= GAME 3: FRACTION RACE =================
+  const raceQuestions = [
+    { q: "1/2 + 1/4 = ?", options: ["2/6", "3/4", "1/6", "2/4"], answer: 1 },
+    { q: "1/3 + 1/6 = ?", options: ["2/9", "1/2", "2/6", "1/9"], answer: 1 },
+    { q: "1/5 + 3/10 = ?", options: ["4/15", "1/2", "4/10", "5/15"], answer: 1 },
+    { q: "2/5 + 1/2 = ?", options: ["3/7", "9/10", "3/10", "2/10"], answer: 1 },
+    { q: "1 1/4 + 1/2 = ?", options: ["1 3/4", "1 2/6", "2 1/4", "1 1/6"], answer: 0 },
+  ];
+  let raceIdx = 0, raceScore = 0, raceTimeLeft = 20, raceInterval = null, raceAnswered = false;
+
+  function startRace(){
+    raceIdx = 0; raceScore = 0;
+    document.getElementById('raceScoreDisplay').textContent = 'Race Score: 0';
+    showRaceQuestion();
+  }
+  function showRaceQuestion(){
+    raceAnswered = false;
+    const area = document.getElementById('raceArea');
+    if(raceIdx >= raceQuestions.length){
+      clearInterval(raceInterval); raceInterval = null;
+      area.innerHTML = `<div style="text-align:center; color:var(--gold); font-weight:700; font-size:14px;">🏁 Race Complete! Final Score: ${raceScore} points<br><button class="btn" style="margin-top:14px;" onclick="startRace()">Race Again!</button></div>`;
+      document.getElementById('raceTimerFill').style.width = '0%';
+      return;
+    }
+    const item = raceQuestions[raceIdx];
+    area.innerHTML = `
+      <div class="race-qcard">
+        <div class="rq">${item.q}</div>
+        <div class="race-opts" id="raceOpts"></div>
+      </div>
+    `;
+    const optsEl = document.getElementById('raceOpts');
+    item.options.forEach((opt, oi)=>{
+      const btn = document.createElement('div');
+      btn.className = 'race-opt';
+      btn.id = 'raceopt-'+oi;
+      btn.textContent = opt;
+      btn.addEventListener('click', ()=> raceAnswer(oi, item.answer));
+      optsEl.appendChild(btn);
+    });
+    raceTimeLeft = 20;
+    document.getElementById('raceTimerFill').style.width = '100%';
+    document.getElementById('raceTimerFill').style.transition = 'none';
+    requestAnimationFrame(()=>{
+      document.getElementById('raceTimerFill').style.transition = 'width 20s linear';
+      document.getElementById('raceTimerFill').style.width = '0%';
+    });
+    if(raceInterval) clearInterval(raceInterval);
+    raceInterval = setInterval(()=>{
+      raceTimeLeft--;
+      if(raceTimeLeft<=0){
+        clearInterval(raceInterval); raceInterval=null;
+        if(!raceAnswered) raceAnswer(-1, item.answer);
+      }
+    }, 1000);
+  }
+  function raceAnswer(chosenIdx, correctIdx){
+    if(raceAnswered) return;
+    raceAnswered = true;
+    if(raceInterval){ clearInterval(raceInterval); raceInterval=null; }
+    const correctEl = document.getElementById('raceopt-'+correctIdx);
+    if(correctEl) correctEl.classList.add('correct');
+    if(chosenIdx !== -1 && chosenIdx !== correctIdx){
+      const wrongEl = document.getElementById('raceopt-'+chosenIdx);
+      if(wrongEl) wrongEl.classList.add('wrong');
+    }
+    if(chosenIdx === correctIdx){
+      const bonus = Math.max(0, raceTimeLeft);
+      raceScore += 10 + bonus;
+      document.getElementById('raceScoreDisplay').textContent = `Race Score: ${raceScore}  (+${10+bonus}!)`;
+    } else {
+      document.getElementById('raceScoreDisplay').textContent = `Race Score: ${raceScore}`;
+    }
+    setTimeout(()=>{ raceIdx++; showRaceQuestion(); }, 1400);
+  }
+
+  // ================= FINAL QUIZ =================
+  const qs = [
+    { q: "1. What is the LCD (Least Common Denominator) of 3 and 5?", options: ["8", "15", "35", "1"], answer: 1 },
+    { q: "2. 1/3 + 1/6 = ?", options: ["1/2", "2/9", "1/9", "2/18"], answer: 0 },
+    { q: "3. 2/5 + 1/4 = ?", options: ["3/9", "13/20", "3/20", "2/20"], answer: 1 },
+    { q: "4. 1/2 + 1/3 = ?", options: ["2/5", "5/6", "1/6", "2/6"], answer: 1 },
+    { q: "5. True or False: When adding fractions, you add the denominators together too.", options: ["True", "False"], answer: 1 },
+    { q: "6. 1 1/4 + 1/2 = ?", options: ["1 3/4", "1 1/6", "2 1/4", "1 2/6"], answer: 0 },
+    { q: "7. 1/4 + 3/8 = ?", options: ["4/12", "5/8", "4/8", "1/2"], answer: 1 },
+    { q: "8. True or False: You should always check if your answer can be simplified.", options: ["True", "False"], answer: 0 },
+  ];
+  const quizEl = document.getElementById('quiz');
+  const quizAnswers = {};
+  qs.forEach((item, i)=>{
+    const row = document.createElement('div');
+    row.className = 'quiz-row';
+    let btnsHtml = '<div class="quiz-btns">';
+    item.options.forEach((opt, oi)=>{
+      btnsHtml += `<button class="mc-pill" id="qopt-${i}-${oi}" onclick="checkAnswer(${i},${oi},${item.answer})">${opt}</button>`;
+    });
+    btnsHtml += `<span class="quiz-feedback" id="fb-${i}"></span></div>`;
+    row.innerHTML = `<p>${item.q}</p>${btnsHtml}`;
+    quizEl.appendChild(row);
+  });
+  function checkAnswer(i, chosen, correct){
+    const fb = document.getElementById('fb-'+i);
+    for(let oi=0; oi<qs[i].options.length; oi++){
+      document.getElementById(`qopt-${i}-${oi}`).classList.remove('correct','wrong');
+    }
+    quizAnswers[i] = (chosen===correct);
+    if(chosen===correct){
+      document.getElementById(`qopt-${i}-${chosen}`).classList.add('correct');
+      fb.textContent = '✓ Correct!'; fb.style.color = '#2C9D48';
+    } else {
+      document.getElementById(`qopt-${i}-${chosen}`).classList.add('wrong');
+      document.getElementById(`qopt-${i}-${correct}`).classList.add('correct');
+      fb.textContent = '✗ Try again'; fb.style.color = '#E8574A';
+    }
+    updateQuizScore();
+  }
+  function updateQuizScore(){
+    const answered = Object.keys(quizAnswers).length;
+    const correct = Object.values(quizAnswers).filter(Boolean).length;
+    document.getElementById('quizScore').textContent = `Score: ${correct}/${qs.length}`;
+    const completeEl = document.getElementById('quizComplete');
+    if(answered === qs.length){
+      let msg;
+      if(correct === qs.length) msg = "🎉 Perfect score! You're a true Fraction Master!";
+      else if(correct >= qs.length - 1) msg = "🌟 Amazing work! You really know how to add fractions.";
+      else msg = "👍 Nice try! Maybe look back at a few pages and try again — you're doing great.";
+      completeEl.textContent = `${msg} Final Score: ${correct}/${qs.length}`;
+      completeEl.style.display = 'block';
+    } else {
+      completeEl.style.display = 'none';
+    }
+  }
+
+  // ================= CERTIFICATE =================
+  const today = new Date();
+  document.getElementById('certDate').textContent = today.toLocaleDateString(undefined, { year:'numeric', month:'long', day:'numeric' });
+</script>
+</body>
+</html>
